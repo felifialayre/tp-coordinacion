@@ -41,6 +41,8 @@ class SumFilter:
                           MessageType.DATA,
                           [final_fruit_item.fruit, final_fruit_item.amount])
             for data_output_exchange in self.data_output_exchanges:
+                # en principio creo q esto no hace falta (solo un aggregator)
+                # más adelante va a tener que haber cierta lógica supongo
                 data_output_exchange.send(data_msg.serialize())
 
         logging.info(f"Broadcasting EOF message")
@@ -52,6 +54,7 @@ class SumFilter:
 
 
     def process_data_messsage(self, message, ack, nack):
+        logging.info("Process message")
         msg = Message.deserialize(message)
         if msg.type == MessageType.DATA:
             self._process_data(msg.client_id, msg.fruit, msg.amount)
