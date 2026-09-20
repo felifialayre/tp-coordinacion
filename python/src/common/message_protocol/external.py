@@ -33,7 +33,7 @@ def _recv_fruit_record(socket):
     amount = external_serializer.deserialize_uint32(
         _recv_sized(socket, external_serializer.UINT32_SIZE)
     )
-    return (fruit, amount)
+    return fruit, amount
 
 
 def _recv_fruit_top(socket):
@@ -64,7 +64,7 @@ def recv_msg(socket):
         _recv_sized(socket, external_serializer.UINT32_SIZE)
     )
     msg_handler = RECV_MSG_HANDLERS[msg_type]
-    return (msg_type, msg_handler(socket))
+    return msg_type, msg_handler(socket)
 
 
 def _serialize_fruit_record(fruit, amount):
