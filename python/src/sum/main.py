@@ -1,6 +1,5 @@
 import os
 import logging
-import threading
 
 from common import middleware, message_protocol, fruit_item
 from common.message_protocol.internal import Message, MessageType
@@ -16,8 +15,8 @@ AGGREGATION_PREFIX = os.environ["AGGREGATION_PREFIX"]
 
 class SumFilter:
     def __init__(self):
-        self.input_queue = middleware.MessageMiddlewareQueueRabbitMQ(
-            MOM_HOST, INPUT_QUEUE
+        self.multiqueue = middleware.MessageMiddlewareMultiRabbitMQ(
+            host=MOM_HOST,  exchange_name=SUM_CONTROL_EXCHANGE, queue_name=INPUT_QUEUE
         )
         self.data_output_exchanges = []
         for i in range(AGGREGATION_AMOUNT):
@@ -59,11 +58,18 @@ class SumFilter:
         if msg.type == MessageType.DATA:
             self._process_data(msg.client_id, msg.fruit, msg.amount)
         else:
+            self.multiqueue.send(message)
+        ack()
+
+    def process_eof_messsage(self, message, ack, _nack):
+        logging.info("Process eof")
+        msg = Message.deserialize(message)
+        if msg.type == MessageType.EOF: # por las dudas checkeo..
             self._process_eof(msg.client_id)
         ack()
 
     def start(self):
-        self.input_queue.start_consuming(self.process_data_messsage)
+        self.multiqueue.start_consuming(self.process_data_messsage, self.process_eof_messsage)
 
 def main():
     logging.basicConfig(level=logging.INFO)

@@ -182,6 +182,7 @@ class MessageMiddlewareMultiRabbitMQ(_RabbitMQBase, MessageMiddleware):
             self.exchange_queue_name = self._declare_exchange_queue(self.exchange_name, exchange_type='fanout')
             self._bind(self.exchange_queue_name, self.exchange_name, self.routing_keys)
             self._register_consumer(self.exchange_queue_name, message_callback_exchange)
+        self._declare_queue(self.queue_name, durable=True)
         self._register_consumer(self.queue_name, message_callback_queue, prefetch_count=1)
         self._start_consuming()
 
