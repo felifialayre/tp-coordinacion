@@ -24,6 +24,7 @@ class AggregationFilter:
             MOM_HOST, OUTPUT_QUEUE
         )
         self.fruit_top_by_client_id = {}
+        self.eof_per_client = {}
 
     def _process_data(self, client_id, fruit, amount):
         logging.info("Processing data message")
@@ -32,11 +33,20 @@ class AggregationFilter:
 
     def _process_eof(self, client_id):
         logging.info("Received EOF")
+        eof_count = self.eof_per_client.get(client_id, 0) + 1
+        self.eof_per_client[client_id] = eof_count
+        if eof_count < SUM_AMOUNT:
+            return
+        self._send_results(client_id)
+
+    def _send_results(self, client_id):
         fruits = self.fruit_top_by_client_id[client_id]
         top = sorted(fruits.values(), reverse=True)[:TOP_SIZE]
         fruit_top = [(fi.fruit, fi.amount) for fi in top]
         self.output_queue.send(Message(client_id, MessageType.RESULT, fruit_top).serialize())
+
         del self.fruit_top_by_client_id[client_id]
+        del self.eof_per_client[client_id]
 
     def process_messsage(self, message, ack, nack):
         logging.info("Process message")
