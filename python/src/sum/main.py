@@ -53,7 +53,7 @@ class SumFilter:
         self.amount_by_fruit_by_client_id[client_id] = {}
 
 
-    def process_data_messsage(self, message, ack, nack):
+    def process_data_messsage(self, message, ack, _nack):
         logging.info("Process message")
         msg = Message.deserialize(message)
         if msg.type == MessageType.DATA:
