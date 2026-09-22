@@ -1,5 +1,6 @@
 import os
 import logging
+import zlib
 
 from common import middleware, message_protocol, fruit_item
 from common.message_protocol.internal import Message, MessageType
@@ -39,10 +40,9 @@ class SumFilter:
             data_msg = Message(client_id,
                           MessageType.DATA,
                           [final_fruit_item.fruit, final_fruit_item.amount])
-            for data_output_exchange in self.data_output_exchanges:
-                # en principio creo q esto no hace falta (solo un aggregator)
-                # más adelante va a tener que haber cierta lógica supongo
-                data_output_exchange.send(data_msg.serialize())
+            # hasheo el índice con crc32 -> determinístico
+            idx = zlib.crc32(final_fruit_item.fruit.encode()) % AGGREGATION_AMOUNT
+            self.data_output_exchanges[idx].send(data_msg.serialize())
 
         logging.info(f"Broadcasting EOF message")
         eof_msg = Message(client_id, MessageType.EOF)
@@ -72,7 +72,10 @@ class SumFilter:
         ack()
 
     def start(self):
-        self.multiqueue.start_consuming(self.process_data_messsage, self.process_eof_messsage)
+        self.multiqueue.start_consuming(
+                message_callback_queue=self.process_data_messsage,
+                message_callback_exchange=self.process_eof_messsage
+        )
 
 def main():
     logging.basicConfig(level=logging.INFO)

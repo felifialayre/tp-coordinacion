@@ -41,12 +41,16 @@ class AggregationFilter:
         self._send_results(client_id)
 
     def _send_results(self, client_id):
-        fruits = self.fruit_top_by_client_id[client_id]
-        top = sorted(fruits.values(), reverse=True)[:TOP_SIZE]
-        fruit_top = [(fi.fruit, fi.amount) for fi in top]
-        self.output_queue.send(Message(client_id, MessageType.RESULT, fruit_top).serialize())
+        try:
+            fruits = self.fruit_top_by_client_id[client_id]
+            top = sorted(fruits.values(), reverse=True)[:TOP_SIZE]
+            fruit_top = [(fi.fruit, fi.amount) for fi in top]
+        except KeyError:
+            fruit_top = []
 
-        del self.fruit_top_by_client_id[client_id]
+        self.output_queue.send(Message(client_id, MessageType.RESULT, fruit_top).serialize())
+        if fruit_top:
+            del self.fruit_top_by_client_id[client_id]
         del self.eof_per_client[client_id]
 
     def process_messsage(self, message, ack, nack):
