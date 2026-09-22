@@ -3,7 +3,7 @@ import logging
 import signal
 import zlib
 
-from common import middleware, message_protocol, fruit_item
+from common import middleware, fruit_item
 from common.message_protocol.internal import Message, MessageType
 from common.middleware.middleware import MessageMiddlewareCloseError
 
@@ -32,7 +32,7 @@ class SumFilter:
         self.amount_by_fruit_by_client_id = {}
 
     def _process_data(self, client_id, fruit, amount):
-        logging.info(f"Process data")
+        logging.info("Process data")
         client_fruits = self.amount_by_fruit_by_client_id.setdefault(client_id, {})
         client_fruits[fruit] = client_fruits.get(
             fruit, fruit_item.FruitItem(fruit, 0)
@@ -40,7 +40,7 @@ class SumFilter:
 
     def _process_eof(self, client_id):
         logging.info(f"Broadcasting data messages")
-        for final_fruit_item in self.amount_by_fruit_by_client_id[client_id].values():
+        for final_fruit_item in self.amount_by_fruit_by_client_id.get(client_id, {}).values():
             data_msg = Message(client_id,
                           MessageType.DATA,
                           [final_fruit_item.fruit, final_fruit_item.amount])
@@ -53,7 +53,7 @@ class SumFilter:
         for data_output_exchange in self.data_output_exchanges:
             data_output_exchange.send(eof_msg.serialize())
 
-        self.amount_by_fruit_by_client_id[client_id] = {}
+        self.amount_by_fruit_by_client_id.pop(client_id, None)
 
 
     def process_data_messsage(self, message, ack, _nack):
@@ -87,7 +87,7 @@ class SumFilter:
                 try:
                     self.data_output_exchanges[i].close()
                 except MessageMiddlewareCloseError as e:
-                    logging.error(f"Error closing exchange {i}")
+                    logging.error(f"Error closing exchange {i}: {e}")
 
     def _handle_sigterm(self, _sig, _frame):
         self.multiqueue.stop_consuming()

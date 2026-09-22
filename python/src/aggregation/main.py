@@ -2,7 +2,7 @@ import os
 import logging
 import signal
 
-from common import middleware, message_protocol, fruit_item
+from common import middleware, fruit_item
 from common.message_protocol.internal import Message, MessageType
 
 ID = int(os.environ["ID"])
@@ -52,9 +52,9 @@ class AggregationFilter:
             fruit_top = []
 
         self.output_queue.send(Message(client_id, MessageType.RESULT, fruit_top).serialize())
-        if fruit_top:
-            del self.fruit_top_by_client_id[client_id]
-        del self.eof_per_client[client_id]
+
+        self.fruit_top_by_client_id.pop(client_id, None)
+        self.eof_per_client.pop(client_id, None)
 
     def process_messsage(self, message, ack, nack):
         logging.info("Process message")

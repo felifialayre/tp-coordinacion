@@ -2,7 +2,7 @@ import os
 import logging
 import signal
 
-from common import middleware, message_protocol, fruit_item
+from common import middleware, fruit_item
 from common.message_protocol.internal import Message, MessageType
 
 MOM_HOST = os.environ["MOM_HOST"]
@@ -58,8 +58,6 @@ class JoinFilter:
 
     def _send_final_top(self, client_id):
         # vuelvo a ordenar el merge de todos los tops
-        # no estoy aprovechando que sé que están ordenados?
-
         fruits = self.amount_by_fruit_by_client_id.get(client_id, {})
         top = sorted(fruits.values(), reverse=True)[:TOP_SIZE]
         final_top = [(fi.fruit, fi.amount) for fi in top]
