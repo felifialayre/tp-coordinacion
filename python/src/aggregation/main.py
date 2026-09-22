@@ -1,5 +1,6 @@
 import os
 import logging
+import signal
 
 from common import middleware, message_protocol, fruit_item
 from common.message_protocol.internal import Message, MessageType
@@ -17,6 +18,8 @@ TOP_SIZE = int(os.environ["TOP_SIZE"])
 class AggregationFilter:
 
     def __init__(self):
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
+
         self.input_exchange = middleware.MessageMiddlewareExchangeRabbitMQ(
             MOM_HOST, AGGREGATION_PREFIX, [f"{AGGREGATION_PREFIX}_{ID}"]
         )
@@ -63,7 +66,14 @@ class AggregationFilter:
         ack()
 
     def start(self):
-        self.input_exchange.start_consuming(self.process_messsage)
+        try:
+            self.input_exchange.start_consuming(self.process_messsage)
+        finally:
+            self.input_exchange.close()
+            self.output_queue.close()
+
+    def _handle_sigterm(self, _sig, _frame):
+        self.input_exchange.stop_consuming()
 
 
 def main():

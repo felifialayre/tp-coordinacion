@@ -106,10 +106,11 @@ class _RabbitMQBase:
         self.consumer_tags = []
 
     def close(self):
+        if not self.connection.is_open:
+            return
         try:
             self.connection.close()
         except pika.exceptions.AMQPError as e:
-            # close no idempotente -> si cierro algo ya cerrado explota
             raise MessageMiddlewareCloseError("Error while closing connection") from e
 
 

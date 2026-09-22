@@ -1,9 +1,11 @@
 import os
 import logging
+import signal
 import zlib
 
 from common import middleware, message_protocol, fruit_item
 from common.message_protocol.internal import Message, MessageType
+from common.middleware.middleware import MessageMiddlewareCloseError
 
 ID = int(os.environ["ID"])
 MOM_HOST = os.environ["MOM_HOST"]
@@ -16,6 +18,8 @@ AGGREGATION_PREFIX = os.environ["AGGREGATION_PREFIX"]
 
 class SumFilter:
     def __init__(self):
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
+
         self.multiqueue = middleware.MessageMiddlewareMultiRabbitMQ(
             host=MOM_HOST,  exchange_name=SUM_CONTROL_EXCHANGE, queue_name=INPUT_QUEUE
         )
@@ -72,10 +76,21 @@ class SumFilter:
         ack()
 
     def start(self):
-        self.multiqueue.start_consuming(
-                message_callback_queue=self.process_data_messsage,
-                message_callback_exchange=self.process_eof_messsage
-        )
+        try:
+            self.multiqueue.start_consuming(
+                    message_callback_queue=self.process_data_messsage,
+                    message_callback_exchange=self.process_eof_messsage
+            )
+        finally:
+            self.multiqueue.close()
+            for i in range(len(self.data_output_exchanges)):
+                try:
+                    self.data_output_exchanges[i].close()
+                except MessageMiddlewareCloseError as e:
+                    logging.error(f"Error closing exchange {i}")
+
+    def _handle_sigterm(self, _sig, _frame):
+        self.multiqueue.stop_consuming()
 
 def main():
     logging.basicConfig(level=logging.INFO)

@@ -1,5 +1,6 @@
 import os
 import logging
+import signal
 
 from common import middleware, message_protocol, fruit_item
 from common.message_protocol.internal import Message, MessageType
@@ -17,6 +18,8 @@ TOP_SIZE = int(os.environ["TOP_SIZE"])
 class JoinFilter:
 
     def __init__(self):
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
+
         self.input_queue = middleware.MessageMiddlewareQueueRabbitMQ(
             MOM_HOST, INPUT_QUEUE
         )
@@ -66,7 +69,14 @@ class JoinFilter:
         self.tops_per_client_id.pop(client_id, None)
 
     def start(self):
-        self.input_queue.start_consuming(self.process_messsage)
+        try:
+            self.input_queue.start_consuming(self.process_messsage)
+        finally:
+            self.input_queue.close()
+            self.output_queue.close()
+
+    def _handle_sigterm(self, _sig, _frame):
+        self.input_queue.stop_consuming()
 
 
 def main():
