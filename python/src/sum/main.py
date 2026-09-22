@@ -58,14 +58,17 @@ class SumFilter:
         if msg.type == MessageType.DATA:
             self._process_data(msg.client_id, msg.fruit, msg.amount)
         else:
+            # acá propagamos el eof a través del exchange
             self.multiqueue.send(message)
         ack()
 
-    def process_eof_messsage(self, message, ack, _nack):
+    def process_eof_messsage(self, message, ack, nack):
         logging.info("Process eof")
         msg = Message.deserialize(message)
         if msg.type == MessageType.EOF: # por las dudas checkeo..
             self._process_eof(msg.client_id)
+        else:
+            nack()
         ack()
 
     def start(self):

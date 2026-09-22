@@ -36,6 +36,7 @@ class AggregationFilter:
         eof_count = self.eof_per_client.get(client_id, 0) + 1
         self.eof_per_client[client_id] = eof_count
         if eof_count < SUM_AMOUNT:
+            # si no me mandaron todos los sums sigo esperando
             return
         self._send_results(client_id)
 
@@ -56,6 +57,7 @@ class AggregationFilter:
         else:
             self._process_eof(msg.client_id)
         ack()
+
     def start(self):
         self.input_exchange.start_consuming(self.process_messsage)
 

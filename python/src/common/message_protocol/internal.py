@@ -32,6 +32,7 @@ class Message:
     @property
     def amount(self):
         return self.payload[1]
+
 def serialize(message):
     return json.dumps(message).encode("utf-8")
 
