@@ -6,6 +6,7 @@ class MessageType(StrEnum):
     DATA = "data"
     EOF = "eof"
     RESULT = "result"
+    CONTROL = "control"
 
 class Message:
     def __init__(self, client_id, message_type,payload=None):
