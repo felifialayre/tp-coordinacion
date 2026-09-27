@@ -67,6 +67,9 @@ class SumFilter:
             data_output_exchange.send(eof_msg.serialize())
 
         self.amount_by_fruit_by_client_id.pop(client_id, None)
+        self.data_messages_per_client_id.pop(client_id, None)
+        self.expected_per_client_id.pop(client_id, None)
+        self.count_by_client_id.pop(client_id, None)
 
 
     def process_input_messsage(self, message, ack, _nack):
@@ -89,6 +92,11 @@ class SumFilter:
         logging.info("Process control message")
         msg = Message.deserialize(message)
         client_id = msg.client_id
+
+        if client_id in self.flushed_client_ids:  # ya cerré este cliente -> ignoro tardíos
+            ack()
+            return
+
         if msg.type == MessageType.CONTROL:
             first_time = client_id not in self.expected_per_client_id
             self.expected_per_client_id[client_id] = msg.payload[0]
