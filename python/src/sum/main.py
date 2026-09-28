@@ -38,7 +38,7 @@ class SumFilter:
         self.expected_per_client_id = {}
         # acumula localmente cuantos msjs de data se procesaron por cliente
         self.count_by_client_id = {}
-        # registro de clientes ya flusheados para evitar envios inecesarios
+        # registro de clientes ya flusheados para evitar envios innecesarios
         self.flushed_client_ids = set()
 
     def _process_data(self, client_id, fruit, amount):
